@@ -85,12 +85,34 @@ async function doAuth(e) {
     }
 }
 
+/* Show the Google button only if the provider is switched on for this
+   project, so nobody can tap it into a dead end. Enabling it in the
+   Supabase dashboard makes the button appear on the next page load. */
+async function revealEnabledProviders() {
+    try {
+        const r = await fetch(SUPABASE_URL + '/auth/v1/settings', { headers: { apikey: SUPABASE_ANON_KEY } });
+        const s = await r.json();
+        if (s.external && s.external.google)
+            document.getElementById('googleBlock').classList.remove('hide');
+    } catch (e) { /* offline — email sign-in still works */ }
+}
+
+async function signInWithGoogle() {
+    const { error } = await sb.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: location.origin + location.pathname }
+    });
+    if (error) authMsg(friendlyAuthError(error));
+}
+
 function friendlyAuthError(err) {
     const m = (err && err.message || '').toLowerCase();
     if (m.includes('invalid login')) return 'Wrong email or password.';
     if (m.includes('email not confirmed')) return 'Email confirmation is still switched on in Supabase — turn it off under Authentication → Sign In / Providers → Email.';
     if (m.includes('already registered')) return 'That email already has an account. Sign in instead.';
     if (m.includes('password')) return err.message;
+    if (m.includes('provider is not enabled') || m.includes('unsupported provider'))
+        return 'Google sign-in is not switched on yet in Supabase — see SETUP.md.';
     if (m.includes('rate limit') || m.includes('too many')) return 'Too many attempts. Wait a minute and try again.';
     if (m.includes('fetch') || m.includes('network')) return 'No connection. Check your internet and try again.';
     return err.message || 'Something went wrong. Try again.';
@@ -617,6 +639,7 @@ async function boot() {
     });
 
     initForm();
+    revealEnabledProviders();
 
     sb.auth.onAuthStateChange((event, session) => {
         user = session ? session.user : null;
@@ -630,6 +653,10 @@ async function boot() {
     if (!data.session) {
         document.getElementById('authView').classList.remove('hide');
         authMode('login');
+        // Surface anything Google sent back on the redirect, e.g. a cancelled sign-in.
+        const back = new URLSearchParams(location.hash.slice(1) || location.search);
+        const oerr = back.get('error_description') || back.get('error');
+        if (oerr) authMsg(decodeURIComponent(oerr.replace(/\+/g, ' ')));
     }
 }
 
