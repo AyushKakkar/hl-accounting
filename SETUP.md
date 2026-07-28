@@ -65,7 +65,7 @@ The anon key being visible in the website is normal and safe. It only identifies
 
 Left sidebar → **Authentication**.
 
-- **Sign In / Providers → Email**: leave **Confirm email** ON. It stops someone signing up with an email that isn't theirs.
+- **Sign In / Providers → Email**: turn **Confirm email** OFF, so people can sign up and start using it immediately with no email round-trip. The trade-off: nothing then verifies that the email address someone typed is really theirs, so pair this with turning off public signups (below) and creating each person's login yourself.
 - **Providers → Email → Minimum password length**: set to **8**.
 - Turn on **Leaked password protection** if you see it (blocks passwords found in known breaches).
 - **URL Configuration → Site URL**: put your live address here once you have it from Step 5, e.g. `https://ayushkakkar.github.io/hl-accounting/`. Add the same under **Redirect URLs**. Password reset links won't work until you do this.

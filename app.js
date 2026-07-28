@@ -69,7 +69,8 @@ async function doAuth(e) {
             const { data, error } = await sb.auth.signUp({ email, password });
             if (error) throw error;
             if (!data.session) {
-                authMsg('Account created. Check your email for the confirmation link, then sign in.', 'ok');
+                // Only reachable if email confirmation gets switched back on in Supabase.
+                authMsg('Account created. Sign in with the same email and password.', 'ok');
                 authMode('login');
             }
         } else {
@@ -87,7 +88,7 @@ async function doAuth(e) {
 function friendlyAuthError(err) {
     const m = (err && err.message || '').toLowerCase();
     if (m.includes('invalid login')) return 'Wrong email or password.';
-    if (m.includes('email not confirmed')) return 'Please confirm your email first — check your inbox.';
+    if (m.includes('email not confirmed')) return 'Email confirmation is still switched on in Supabase — turn it off under Authentication → Sign In / Providers → Email.';
     if (m.includes('already registered')) return 'That email already has an account. Sign in instead.';
     if (m.includes('password')) return err.message;
     if (m.includes('rate limit') || m.includes('too many')) return 'Too many attempts. Wait a minute and try again.';
@@ -356,7 +357,7 @@ function renderOpen() {
     <div class="stat"><div class="k">Received</div><div class="v good">${money(paid)}</div></div>`;
 
     document.getElementById('openCards').innerHTML = shown.length ? shown.map(card).join('')
-        : `<div class="empty"><div class="big">🧾</div>${open.length
+        : `<div class="empty">${open.length
             ? 'No account matches that search.'
             : 'No open accounts yet.<br>Tap <b>+ New Entry</b> to add one.'}</div>`;
 }
