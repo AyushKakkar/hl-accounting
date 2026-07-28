@@ -1,4 +1,22 @@
-# Setup — free hosting with logins
+# Setup
+
+**This is already done and running:** https://ayushkakkar.github.io/hl-accounting/
+
+Kept below as a record of how it was set up, and for redoing it elsewhere.
+
+## Deploying a change
+
+From this folder:
+
+```bash
+git add -A && git commit -m "what changed" && git push
+```
+
+Bump `?v=2` to `?v=3` on the script tags in `index.html` whenever you change `app.js`, `products.js` or `config.js` — otherwise phones keep running the cached copy.
+
+---
+
+# Original guide — free hosting with logins
 
 Two free services, about 20 minutes end to end:
 
