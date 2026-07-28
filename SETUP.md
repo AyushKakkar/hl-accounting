@@ -72,6 +72,26 @@ Left sidebar → **Authentication**.
 
 **Who can sign up?** By default anyone who finds your link can create their own login. Their data is completely separate from yours, so nothing leaks — but if you want only your own team to have logins, go to **Authentication → Sign In / Providers → Email** and turn **Allow new users to sign up** OFF. Then create each person's login yourself under **Authentication → Users → Add user**, and give them the password to change after first sign-in.
 
+## Step 4b — Google sign-in (optional)
+
+The app already has a **Continue with Google** button. It stays hidden until the provider is switched on, then appears by itself on the next page load.
+
+**In Google Cloud Console** (https://console.cloud.google.com):
+
+1. Create a project, then **APIs & Services → OAuth consent screen**. User type **External**, fill in app name and your email, save. Leave it in *Testing* if only a few people will use it — then add each person under **Test users**. Publish it if you want anyone to sign in.
+2. **APIs & Services → Credentials → Create credentials → OAuth client ID**, type **Web application**.
+3. Under **Authorised redirect URIs** add exactly:
+   ```
+   https://cnrlbozgnbfcqilwwvyt.supabase.co/auth/v1/callback
+   ```
+4. Copy the **Client ID** and **Client secret**.
+
+**In Supabase** → **Authentication → Sign In / Providers → Google**: toggle on, paste both values, save.
+
+Reload the app — the Google button will be there.
+
+The client secret goes into Supabase only, never into `config.js`. Anyone signing in with Google gets their own private space, exactly like an email login.
+
 ## Step 5 — Put it online (free)
 
 1. Create a new **public** repository on GitHub called `hl-accounting`.
