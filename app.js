@@ -492,7 +492,7 @@ function drawSheet() {
         <tr><th>Product</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr>
         ${rows}
         <tr><td colspan="3" style="color:var(--muted)">Total MRP</td><td class="r">${money(t.mrp)}</td></tr>
-        ${t.saved > 0 ? `<tr><td colspan="3" style="color:var(--muted)">Discount given (${a.tier.slice(1)}%)</td>
+        ${t.saved > 0 ? `<tr><td colspan="3" style="color:var(--muted)">Discount on product earn-base (${a.tier.slice(1)}%)</td>
           <td class="r" style="color:var(--brand)">−${money(t.saved)}</td></tr>` : ''}
         <tr><td colspan="3" style="color:var(--muted)">Their price · ${t.vp.toFixed(2)} VP</td><td class="r">${money(t.sub)}</td></tr>
         ${t.delivery ? `<tr><td colspan="3" style="color:var(--muted)">Delivery</td><td class="r">${money(t.delivery)}</td></tr>` : ''}
@@ -598,7 +598,7 @@ function orderMessage(a) {
     L.push('');
     if (t.saved > 0) {
         L.push(`Total MRP: ${money(t.mrp)}`);
-        L.push(`Discount (${a.tier.slice(1)}%): −${money(t.saved)}`);
+        L.push(`Discount on product earn-base (${a.tier.slice(1)}%): −${money(t.saved)}`);
         L.push(`Your price: ${money(t.sub)}`);
     } else {
         L.push(`Total MRP: ${money(t.mrp)}`);
