@@ -380,8 +380,9 @@ td:first-child{word-break:break-word}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.min.js"
         crossorigin="anonymous"></script>
-<script src="config.js"></script>
-<script src="products.js"></script>
-<script src="app.js"></script>
+<!-- ?v= is bumped on every deploy so phones never run a stale cached copy -->
+<script src="config.js?v=2"></script>
+<script src="products.js?v=2"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>
