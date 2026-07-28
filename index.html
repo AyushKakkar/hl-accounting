@@ -182,8 +182,10 @@ td.r,th.r{text-align:right;white-space:nowrap;padding-left:12px}
 td:first-child{word-break:break-word}
 .sec{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
      font-weight:700;margin:20px 0 9px}
-.kv{display:flex;justify-content:space-between;padding:5px 0;font-size:14px;font-variant-numeric:tabular-nums}
-.kv span{color:var(--muted)}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+    padding:5px 0;font-size:14px;font-variant-numeric:tabular-nums}
+.kv span{color:var(--muted);flex:1;min-width:0}   /* long labels wrap instead of overflowing */
+.kv b{white-space:nowrap}
 .payrow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;
         border-top:1px solid var(--line);font-size:14px;font-variant-numeric:tabular-nums}
 .payrow .del{border:0;background:transparent;color:var(--muted);font-size:19px;width:34px;height:34px;border-radius:9px}
@@ -428,8 +430,8 @@ td:first-child{word-break:break-word}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.min.js"
         crossorigin="anonymous"></script>
 <!-- ?v= is bumped on every deploy so phones never run a stale cached copy -->
-<script src="config.js?v=6"></script>
-<script src="products.js?v=6"></script>
-<script src="app.js?v=6"></script>
+<script src="config.js?v=7"></script>
+<script src="products.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
