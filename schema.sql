@@ -12,11 +12,15 @@ create table if not exists public.accounts (
   tier        text not null check (tier in ('mrp','d15','d25','d35','d42','d50')),
   order_date  date not null,
   closed_at   date,
+  delivery    integer not null default 0 check (delivery >= 0),
   items       jsonb not null default '[]'::jsonb,
   payments    jsonb not null default '[]'::jsonb,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
+
+-- For a database created before the delivery column existed:
+alter table public.accounts add column if not exists delivery integer not null default 0;
 
 -- Fast lookups of "my accounts", open ones first.
 create index if not exists accounts_user_idx on public.accounts (user_id, closed_at, order_date desc);

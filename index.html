@@ -109,6 +109,18 @@ main{padding:14px 14px calc(96px + var(--safe-b));max-width:1120px;margin:0 auto
 .field input:focus,.field select:focus{outline:2px solid var(--brand);outline-offset:-1px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
+/* delivery — only charged when ticked */
+.delrow{display:flex;align-items:center;gap:10px}
+.check{display:flex;align-items:center;gap:9px;flex:1;font-size:14.5px;font-weight:550;
+       padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);
+       cursor:pointer;min-width:0}
+.check input{width:21px;height:21px;accent-color:var(--brand);flex:none;margin:0;
+       -webkit-appearance:checkbox;appearance:checkbox;padding:0;border-radius:0}
+.check span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.delrow>input[type=number]{width:92px;flex:none;padding:12px 11px;border:1px solid var(--line);
+       border-radius:12px;background:var(--bg);text-align:right;font-variant-numeric:tabular-nums}
+.delrow>input[type=number]:disabled{opacity:.45}
+
 /* tier chips — big tap targets, price repaints on change */
 .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .chips button{padding:11px 4px;border:1px solid var(--line);background:var(--bg);border-radius:11px;
@@ -356,6 +368,17 @@ td:first-child{word-break:break-word}
                 <label>Discount level</label>
                 <div class="chips" id="tierChips"></div>
               </div>
+              <div class="field" style="margin-bottom:0">
+                <label>Delivery</label>
+                <div class="delrow">
+                  <label class="check">
+                    <input type="checkbox" id="fDelivery" onchange="deliveryToggled()">
+                    <span>Add delivery charge</span>
+                  </label>
+                  <input type="number" id="fDeliveryAmt" inputmode="numeric" min="0"
+                         value="105" onchange="recalc()" disabled>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -375,7 +398,10 @@ td:first-child{word-break:break-word}
               <div id="sumItems"></div>
               <div class="kv"><span>Items</span><b id="sQty">0</b></div>
               <div class="kv"><span>Volume points</span><b id="sVP">0.00</b></div>
-              <div class="kv"><span id="sDelLabel">Delivery</span><b id="sDel">₹0</b></div>
+              <div class="kv"><span>Total MRP</span><b id="sMRP">₹0</b></div>
+              <div class="kv" id="sSavedRow"><span>Discount given</span>
+                <b id="sSaved" style="color:var(--brand)">−₹0</b></div>
+              <div class="kv"><span>Delivery</span><b id="sDel">₹0</b></div>
               <div class="kv" style="border-top:1px solid var(--line);margin-top:7px;padding-top:11px;
                    font-size:19px;font-weight:700"><span style="color:var(--ink)">To receive</span><b id="sTotal">₹0</b></div>
               <button class="ghost" style="width:100%;margin-top:12px" onclick="resetForm()">Clear form</button>
@@ -402,8 +428,8 @@ td:first-child{word-break:break-word}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.min.js"
         crossorigin="anonymous"></script>
 <!-- ?v= is bumped on every deploy so phones never run a stale cached copy -->
-<script src="config.js?v=4"></script>
-<script src="products.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="config.js?v=5"></script>
+<script src="products.js?v=5"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

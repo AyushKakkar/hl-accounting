@@ -26,19 +26,25 @@ function toast(msg) {
 /* Each item stores the rate it was billed at, so editing products.js
    later never changes the total of an account already created. */
 const rateOf = (it, tier) => (typeof it.rate === 'number' ? it.rate : (prodById(it.id) || {})[tier] || 0);
+const mrpOf = it => (typeof it.mrp === 'number' ? it.mrp : (prodById(it.id) || {}).mrp || 0);
 
 function totals(acct) {
-    let qty = 0, vp = 0, sub = 0;
+    let qty = 0, vp = 0, sub = 0, mrp = 0;
     (acct.items || []).forEach(it => {
         const p = prodById(it.id);
         qty += it.qty;
         vp += (p ? p.volPoint : 0) * it.qty;
         sub += rateOf(it, acct.tier) * it.qty;
+        mrp += mrpOf(it) * it.qty;
     });
-    const delivery = (qty > 0 && vp < FREE_DELIVERY_VP) ? DELIVERY_CHARGE : 0;
+    const delivery = Number(acct.delivery) || 0;   // added only when you tick it
     const total = sub + delivery;
     const paid = (acct.payments || []).reduce((s, p) => s + p.amount, 0);
-    return { qty, vp, sub, delivery, total, paid, balance: Math.round((total - paid) * 100) / 100 };
+    return {
+        qty, vp, sub, mrp, delivery, total, paid,
+        saved: mrp - sub,
+        balance: Math.round((total - paid) * 100) / 100
+    };
 }
 
 /* ══ auth ═══════════════════════════════════════════════════ */
@@ -158,10 +164,17 @@ async function changePassword() {
 
 /* ══ data ═══════════════════════════════════════════════════ */
 let accounts = [];
+let hasDeliveryColumn = true;   // probed at sign-in; see SETUP.md migration
+
+async function probeSchema() {
+    const { error } = await sb.from('accounts').select('delivery').limit(1);
+    hasDeliveryColumn = !error;
+    if (error) toast('Run the one-line delivery migration in SETUP.md — delivery is not being saved yet');
+}
 
 const fromRow = r => ({
     id: r.id, name: r.name, phone: r.phone || '', tier: r.tier,
-    date: r.order_date, closedAt: r.closed_at,
+    date: r.order_date, closedAt: r.closed_at, delivery: Number(r.delivery) || 0,
     items: r.items || [], payments: r.payments || []
 });
 
@@ -173,15 +186,18 @@ async function loadAccounts() {
 }
 
 async function dbInsert(a) {
-    const { data, error } = await sb.from('accounts').insert({
+    const row = {
         user_id: user.id, name: a.name, phone: a.phone, tier: a.tier,
         order_date: a.date, items: a.items, payments: a.payments
-    }).select().single();
+    };
+    if (hasDeliveryColumn) row.delivery = a.delivery;
+    const { data, error } = await sb.from('accounts').insert(row).select().single();
     if (error) throw error;
     return fromRow(data);
 }
 
 async function dbUpdate(id, patch) {
+    if (!hasDeliveryColumn) delete patch.delivery;
     const { data, error } = await sb.from('accounts').update(patch).eq('id', id).select().single();
     if (error) throw error;
     const a = fromRow(data);
@@ -254,17 +270,33 @@ function setQty(id, v) {
     renderProducts(); recalc();
 }
 
-const draftItems = () => Object.keys(draft).map(id => ({ id: +id, qty: draft[id], rate: prodById(+id)[tier] }));
+const draftItems = () => Object.keys(draft).map(id => ({
+    id: +id, qty: draft[id], rate: prodById(+id)[tier], mrp: prodById(+id).mrp
+}));
+
+/* Delivery is never automatic — it is added only when this is ticked. */
+function deliveryToggled() {
+    const on = document.getElementById('fDelivery').checked;
+    const amt = document.getElementById('fDeliveryAmt');
+    amt.disabled = !on;
+    if (on && !Number(amt.value)) amt.value = DELIVERY_CHARGE;
+    recalc();
+}
+
+const draftDelivery = () => document.getElementById('fDelivery').checked
+    ? Math.max(0, Number(document.getElementById('fDeliveryAmt').value) || 0)
+    : 0;
 
 function recalc() {
     const items = draftItems();
-    const t = totals({ items, tier, payments: [] });
+    const t = totals({ items, tier, payments: [], delivery: draftDelivery() });
 
     document.getElementById('sQty').textContent = t.qty;
     document.getElementById('sVP').textContent = t.vp.toFixed(2);
+    document.getElementById('sMRP').textContent = money(t.mrp);
+    document.getElementById('sSaved').textContent = '−' + money(t.saved);
+    document.getElementById('sSavedRow').classList.toggle('hide', t.saved <= 0);
     document.getElementById('sDel').textContent = money(t.delivery);
-    document.getElementById('sDelLabel').textContent =
-        (t.qty && t.vp >= FREE_DELIVERY_VP) ? 'Delivery — free at 100+ VP' : 'Delivery';
     document.getElementById('sTotal').textContent = money(t.total);
     document.getElementById('barTotal').textContent = money(t.total);
     document.getElementById('barSub').textContent = t.qty
@@ -294,14 +326,15 @@ async function saveAccount() {
 
     const payload = {
         name, phone: document.getElementById('fPhone').value.trim(),
-        tier, date: document.getElementById('fDate').value || today(), items, payments: []
+        tier, date: document.getElementById('fDate').value || today(),
+        items, payments: [], delivery: draftDelivery()
     };
 
     try {
         if (editingId) {
             await dbUpdate(editingId, {
                 name: payload.name, phone: payload.phone, tier: payload.tier,
-                order_date: payload.date, items: payload.items
+                order_date: payload.date, items: payload.items, delivery: payload.delivery
             });
             toast('Account updated');
             resetForm();
@@ -325,6 +358,9 @@ function resetForm() {
     document.getElementById('fPhone').value = '';
     document.getElementById('fDate').value = today();
     document.getElementById('pSearch').value = '';
+    document.getElementById('fDelivery').checked = false;
+    document.getElementById('fDeliveryAmt').value = DELIVERY_CHARGE;
+    deliveryToggled();
     setTier('d25');
 }
 
@@ -336,6 +372,9 @@ function editAccount(id) {
     document.getElementById('fPhone').value = a.phone || '';
     document.getElementById('fDate').value = a.date;
     document.getElementById('pSearch').value = '';
+    document.getElementById('fDelivery').checked = a.delivery > 0;
+    document.getElementById('fDeliveryAmt').value = a.delivery > 0 ? a.delivery : DELIVERY_CHARGE;
+    deliveryToggled();
     closeSheet(); show('new'); setTier(a.tier);
 }
 
@@ -452,8 +491,11 @@ function drawSheet() {
       <table>
         <tr><th>Product</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr>
         ${rows}
-        <tr><td colspan="3" style="color:var(--muted)">Subtotal · ${t.vp.toFixed(2)} VP</td><td class="r">${money(t.sub)}</td></tr>
-        <tr><td colspan="3" style="color:var(--muted)">Delivery${t.delivery ? '' : ' — free, 100+ VP'}</td><td class="r">${money(t.delivery)}</td></tr>
+        <tr><td colspan="3" style="color:var(--muted)">Total MRP</td><td class="r">${money(t.mrp)}</td></tr>
+        ${t.saved > 0 ? `<tr><td colspan="3" style="color:var(--muted)">Discount given (${a.tier.slice(1)}%)</td>
+          <td class="r" style="color:var(--brand)">−${money(t.saved)}</td></tr>` : ''}
+        <tr><td colspan="3" style="color:var(--muted)">Their price · ${t.vp.toFixed(2)} VP</td><td class="r">${money(t.sub)}</td></tr>
+        ${t.delivery ? `<tr><td colspan="3" style="color:var(--muted)">Delivery</td><td class="r">${money(t.delivery)}</td></tr>` : ''}
         <tr><td colspan="3"><b>Total to receive</b></td><td class="r"><b>${money(t.total)}</b></td></tr>
       </table>
 
@@ -554,13 +596,15 @@ function orderMessage(a) {
     });
 
     L.push('');
-    L.push(a.tier === 'mrp' ? 'Price: MRP (no discount)'
-        : `Discount applied: ${a.tier.slice(1)}%`);
-    if (t.delivery) {
-        L.push(`Subtotal: ${money(t.sub)}`);
-        L.push(`Delivery: ${money(t.delivery)}`);
+    if (t.saved > 0) {
+        L.push(`Total MRP: ${money(t.mrp)}`);
+        L.push(`Discount (${a.tier.slice(1)}%): −${money(t.saved)}`);
+        L.push(`Your price: ${money(t.sub)}`);
+    } else {
+        L.push(`Total MRP: ${money(t.mrp)}`);
     }
-    L.push(`Total: ${money(t.total)}`);
+    if (t.delivery) L.push(`Delivery: ${money(t.delivery)}`);
+    L.push(`Total payable: ${money(t.total)}`);
 
     if (t.paid > 0) {
         L.push('', `Received: ${money(t.paid)}`);
@@ -646,7 +690,7 @@ async function boot() {
         const signedIn = !!user;
         document.getElementById('appView').classList.toggle('hide', !signedIn);
         document.getElementById('authView').classList.toggle('hide', signedIn);
-        if (signedIn) { show('open'); loadAccounts(); }
+        if (signedIn) { show('open'); probeSchema().then(loadAccounts); }
     });
 
     const { data } = await sb.auth.getSession();
